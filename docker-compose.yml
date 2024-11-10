@@ -1,29 +1,29 @@
 services:
-  main-service:
-    build: main-service
-    image: main-service
-    container_name: main-service-container
+  ewm-service:
+    build: ewm-service
+    image: ewm-service
+    container_name: ewm-service-container
     ports:
       - "8080:8080"
     depends_on:
-      main-db:
+      ewm-db:
         condition: service_healthy
     environment:
       STATS_SERVER_URL: http://stats-server:9090
       SPRING_DRIVER_CLASS_NAME: org.postgresql.Driver
-      SPRING_DATASOURCE_URL: jdbc:postgresql://main-db:5434/main
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5434/ewm
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: iamroot
 
-  main-db:
+  ewm-db:
     image: postgres:16.1
-    container_name: postgres-main-db
+    container_name: postgres-ewm-db
     ports:
       - "6544:5434"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=iamroot
-      - POSTGRES_DB=main
+      - POSTGRES_DB=ewm
     healthcheck:
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
       timeout: 5s
@@ -40,7 +40,7 @@ services:
           stats-db:
             condition: service_healthy
         environment:
-          MAIN_SERVER_URL: http://main-server:8080
+          EWM_SERVER_URL: http://ewm-server:8080
           SPRING_DRIVER_CLASS_NAME: org.postgresql.Driver
           SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stats
           SPRING_DATASOURCE_USERNAME: postgres
