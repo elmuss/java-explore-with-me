@@ -30,10 +30,10 @@ services:
       interval: 5s
       retries: 10
 
-  stats-service:
-        build: stats/stats-service
-        image: stats-service
-        container_name: stats-service-container
+  stats-server:
+        build: stats/stats-server
+        image: stats-server
+        container_name: stats-server-container
         ports:
           - "9090:9090"
         depends_on:
