@@ -30,7 +30,7 @@ services:
       interval: 5s
       retries: 10
 
-  stats-servise:
+  stats-service:
         build: stats/stats-service
         image: stats-service
         container_name: stats-service-container
