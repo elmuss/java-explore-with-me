@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>stats-client</artifactId>
-    <packaging>pom</packaging>
 
     <dependencies>
         <dependency>

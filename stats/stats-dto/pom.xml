@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>stats-dto</artifactId>
-    <packaging>pom</packaging>
 
     <build>
         <plugins>
