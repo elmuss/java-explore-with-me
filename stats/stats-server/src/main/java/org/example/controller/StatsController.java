@@ -2,10 +2,10 @@ package org.example.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.dto.StatsHitDto;
-import org.example.dto.StatsViewDto;
 import org.example.model.Stats;
 import org.example.service.StatsService;
+import org.example.dto.StatsHitDto;
+import org.example.dto.StatsViewDto;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
