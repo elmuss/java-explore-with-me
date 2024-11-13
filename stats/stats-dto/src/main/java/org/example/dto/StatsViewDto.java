@@ -1,10 +1,14 @@
 package org.example.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Builder
+@AllArgsConstructor
 public class StatsViewDto {
     private String app;
     private String uri;

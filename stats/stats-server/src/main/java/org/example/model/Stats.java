@@ -3,7 +3,7 @@ package org.example.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "stats")
@@ -25,5 +25,5 @@ public class Stats {
     @Column(name = "ip")
     private String ip;
     @Column(name = "timestamp")
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 }
