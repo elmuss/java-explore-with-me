@@ -16,6 +16,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,8 +30,9 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     @Transactional
-    public StatsHitDto createHit(Stats hitEndpoint) {
-        return StatsHitMapper.modelToDto(sr.save(hitEndpoint));
+    public StatsHitDto createHit(StatsHitDto hitEndpoint) {
+
+        return StatsHitMapper.modelToDto(sr.save(StatsHitMapper.modelFromDto(hitEndpoint)));
     }
 
     @Override
@@ -48,17 +50,18 @@ public class StatsServiceImpl implements StatsService {
         ZonedDateTime zdtEnd = ZonedDateTime.of(ldtEnd, ZoneId.of("UTC+0"));
         Instant instantEnd = Instant.from(zdtEnd);
 
-        if (uris == null) {
+        if (uris == null && !unique) {
             stats.addAll(sr.findAllByTimestamp(instantStart, instantEnd));
-            if (unique) {
-                stats.addAll(sr.findAllByTimestampUnique(instantStart, instantEnd));
-            }
-        } else {
+
+        } else if (uris != null && !unique) {
             for (String uri : uris) {
                 stats.addAll(sr.findByUriAndTimestamp(uri, instantStart, instantEnd));
-                if (unique) {
-                    stats.addAll(sr.findByUriAndTimestampUnique(uri, instantStart, instantEnd));
-                }
+            }
+        } else if (uris == null) {
+            stats.addAll(sr.findAllByTimestampUnique(instantStart, instantEnd));
+        } else {
+            for (String uri : uris) {
+                stats.addAll(sr.findByUriAndTimestampUnique(uri, instantStart, instantEnd));
             }
         }
 
@@ -68,6 +71,6 @@ public class StatsServiceImpl implements StatsService {
             hits.add(new StatsViewDto(uriHit.getValue().getFirst().getApp(), uriHit.getKey(), uriHit.getValue().size()));
         }
 
-        return hits;
+        return hits.stream().sorted(Comparator.comparing(StatsViewDto::getHits)).toList().reversed();
     }
 }

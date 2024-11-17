@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.StatsHitDto;
 import org.example.dto.StatsViewDto;
-import org.example.model.Stats;
 import org.example.service.StatsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -22,7 +21,7 @@ public class StatsController {
 
     @PostMapping("/hit")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatsHitDto createHit(@RequestBody Stats hitEndpoint) {
+    public StatsHitDto createHit(@RequestBody StatsHitDto hitEndpoint) {
         return statsService.createHit(hitEndpoint);
     }
 
