@@ -15,10 +15,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -61,7 +58,17 @@ public class StatsServiceImpl implements StatsService {
             stats.addAll(sr.findAllByTimestampUnique(instantStart, instantEnd));
         } else {
             for (String uri : uris) {
-                stats.addAll(sr.findByUriAndTimestampUnique(uri, instantStart, instantEnd));
+                List<Stats> statsToAdd = sr.findByUriAndTimestampUnique(uri, instantStart, instantEnd);
+                for (Stats s : statsToAdd) {
+                    if (stats.isEmpty()) {
+                        stats.add(s);
+                    } else {
+                        if ((!Objects.equals(s.getIp(), stats.getLast().getIp()))
+                                && !Objects.equals(s.getTimestamp(), stats.getLast().getTimestamp())) {
+                            stats.add(s);
+                        }
+                    }
+                }
             }
         }
 
