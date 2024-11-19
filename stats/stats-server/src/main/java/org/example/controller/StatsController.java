@@ -1,6 +1,5 @@
 package org.example.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.StatsHitDto;
@@ -27,8 +26,8 @@ public class StatsController {
 
     @GetMapping("/stats")
     @ResponseStatus(HttpStatus.OK)
-    public List<StatsViewDto> getHits(@Valid @RequestParam String start,
-                                      @Valid @RequestParam String end,
+    public List<StatsViewDto> getHits(@RequestParam String start,
+                                      @RequestParam String end,
                                       @RequestParam(required = false) List<String> uris,
                                       @RequestParam(defaultValue = "false") Boolean unique) {
 
