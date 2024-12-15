@@ -23,7 +23,6 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
 
     private static final String CATEGORY_NOT_FOUND_MSG = "Category with id=%d was not found";
-    private static final String CATEGORY_NOT_UNIQUE_MSG = "Category not unique";
     private static final String CATEGORY_NAME_EMPTY_MSG = "Category name should not be empty";
     private static final String CATEGORY_NAME_LENGTH_MSG = "Category name should not be longer than 50 symbols";
 
@@ -32,13 +31,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto createCategory(NewCategoryDto newCategory) {
         validateCategory(newCategory);
         Category category = CategoryMapper.modelFromNewCategoryDto(newCategory);
-        List<Category> categories = categoryRepository.findAll();
 
-        for (Category c : categories) {
-            if (category.getName().equals(c)) {
-                throw new ValidationException(CATEGORY_NOT_UNIQUE_MSG);
-            }
-        }
         return CategoryMapper.modelToCategoryDto(categoryRepository.save(category));
     }
 
