@@ -9,11 +9,10 @@ services:
       stats-db:
         condition: service_healthy
     environment:
-      EWM_SERVER_URL: http://ewm-server:8080
       SPRING_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_DATASOURCE_URL: jdbc:postgresql://stats-db:5432/stats
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: iamroot
+      SPRING_DATASOURCE_PASSWORD: 1234
 
   stats-db:
     image: postgres:16.1
@@ -22,7 +21,7 @@ services:
       - "6543:5432"
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=iamroot
+      - POSTGRES_PASSWORD=1234
       - POSTGRES_DB=stats
     healthcheck:
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
@@ -40,20 +39,19 @@ services:
       ewm-db:
         condition: service_healthy
     environment:
-      STATS_SERVER_URL: http://stats-server:9090
       SPRING_DRIVER_CLASS_NAME: org.postgresql.Driver
-      SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5434/ewm
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5432/ewm
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: iamroot
+      SPRING_DATASOURCE_PASSWORD: 1234
 
   ewm-db:
     image: postgres:16.1
     container_name: postgres-ewm-db
     ports:
-      - "6544:5434"
+      - "6544:5432"
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=iamroot
+      - POSTGRES_PASSWORD=1234
       - POSTGRES_DB=ewm
     healthcheck:
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
