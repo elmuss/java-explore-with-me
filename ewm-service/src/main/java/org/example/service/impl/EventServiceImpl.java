@@ -4,6 +4,7 @@ import com.querydsl.core.BooleanBuilder;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.StatsClient;
 import org.example.dto.event.*;
 import org.example.exception.ConflictException;
 import org.example.exception.NotFoundException;
@@ -12,31 +13,26 @@ import org.example.mapper.CategoryMapper;
 import org.example.mapper.DateMapper;
 import org.example.mapper.EventMapper;
 import org.example.model.*;
-import org.example.repository.CategoryRepository;
-import org.example.repository.EventRepository;
-import org.example.repository.LocationRepository;
-import org.example.repository.UserRepository;
+import org.example.repository.*;
 import org.example.service.dao.EventService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
-    //private final StatsHitClient statsHitClient;
+    private final StatsClient statsClient;
 
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final LocationRepository locationRepository;
+    private final RequestRepository requestRepository;
 
     private static final String CATEGORY_NOT_FOUND_MSG = "Category with id=%d was not found";
     private static final String USER_NOT_FOUND_MSG = "User with id=%d was not found";
@@ -51,7 +47,7 @@ public class EventServiceImpl implements EventService {
             "Event date should not be earlier, than 2 hours past current date and time";
     private static final String EVENT_ALREADY_PUBLISHED_MSG = "Event is already published";
     private static final String EVENT_CANCELED_MSG = "Event is canceled";
-    private static final String LIMIT_OF_PARTICIPANTS_EXCEEDED_MSG = "Limit of participants exceeded";
+    private static final String END_TIME_WRONG_MSG = "End time is not correct";
 
     @Override
     @Transactional
@@ -111,7 +107,8 @@ public class EventServiceImpl implements EventService {
         }
 
         /*if (Objects.nonNull(states)) {
-            params.and(QEvent.event.state.in(states);
+            List<State> s = states.stream().map(StateMapper::stateConvert).toList();
+            params.and(QEvent.event.state.in(s));
         }*/
 
         if (Objects.nonNull(rangeStart)) {
@@ -126,6 +123,7 @@ public class EventServiceImpl implements EventService {
 
         Iterable<Event> foundEvents = eventRepository.findAll(params);
         for (Event e : foundEvents) {
+            e.setConfirmedRequests(requestRepository.findByEventIdAndStatusLike(e.getId(), State.CONFIRMED).size());
             events.add(e);
         }
 
@@ -139,9 +137,20 @@ public class EventServiceImpl implements EventService {
         if (event.isEmpty() || event.get().getState() != State.PUBLISHED) {
             throw new NotFoundException(String.format(EVENT_NOT_FOUND_MSG, id));
         }
-        //statsHitClient.create(EventMapper.modelToStatsHitDto(request));
 
-        return EventMapper.modelToEventFullDto(event.get());
+        Event foundEvent = event.get();
+        statsClient.create(EventMapper.modelToStatsHitDto(request));
+        //foundEvent.setViews(foundEvent.getViews() + 1);
+        String timeForStat = DateMapper.stringFromInstant(foundEvent.getPublishedOn());
+        List<String> urisForStat = new ArrayList<>();
+        urisForStat.add(request.getRequestURI());
+
+        foundEvent.setViews(statsClient
+                .getHits(timeForStat, timeForStat, urisForStat, true)
+                .getFirst()
+                .getHits());
+
+        return EventMapper.modelToEventFullDto(foundEvent);
     }
 
     @Override
@@ -154,7 +163,7 @@ public class EventServiceImpl implements EventService {
         BooleanBuilder params = new BooleanBuilder();
 
         if (onlyAvailable) {
-            params.and(QEvent.event.confirmedRequests.ne(QEvent.event.participantLimit));
+            params.and(QEvent.event.confirmedRequests.lt(QEvent.event.participantLimit));
         }
 
         if (Objects.nonNull(categories)) {
@@ -163,7 +172,6 @@ public class EventServiceImpl implements EventService {
 
         if (Objects.nonNull(text)) {
             params.and(QEvent.event.annotation.containsIgnoreCase(text));
-            params.and(QEvent.event.description.containsIgnoreCase(text));
         }
 
         if (Objects.nonNull(paid)) {
@@ -176,6 +184,10 @@ public class EventServiceImpl implements EventService {
         }
 
         if (Objects.nonNull(rangeEnd)) {
+            if (Objects.nonNull(rangeStart)
+                    && DateMapper.instantFromString(rangeEnd).isBefore(DateMapper.instantFromString(rangeStart))) {
+                throw new ValidationException(END_TIME_WRONG_MSG);
+            }
             Instant end = DateMapper.instantFromString(rangeEnd);
             params.and(QEvent.event.eventDate.before(end));
         }
@@ -184,17 +196,23 @@ public class EventServiceImpl implements EventService {
             params.and(QEvent.event.eventDate.after(Instant.now()));
         }
 
-        /*if (Objects.nonNull(sort)) {
-            if (sort.equals("EVENT_DATE")) {
-                params.;
-            } else if (sort.equals("VIEWS")) {
-                params.and(QEvent.event.eventDate.after(Instant.now()));
-            }
-        }*/
-
         Iterable<Event> foundEvents = eventRepository.findAll(params);
         for (Event e : foundEvents) {
             events.add(e);
+        }
+
+        if (Objects.nonNull(sort)) {
+            if (sort.equals("EVENT_DATE")) {
+                events = events.stream()
+                        .limit(size)
+                        .sorted(Comparator.comparing(Event::getEventDate))
+                        .toList();
+            } else if (sort.equals("VIEWS")) {
+                events = events.stream()
+                        .limit(size)
+                        .sorted(Comparator.comparingInt(Event::getViews))
+                        .toList();
+            }
         }
 
         return events.stream().map(EventMapper::modelToEventShortDto).limit(size).toList();
@@ -209,6 +227,7 @@ public class EventServiceImpl implements EventService {
         validateUpdateEvent(updateEvent);
 
         Event newEvent = EventMapper.modelToUpdatedEvent(oldEvent, updateEvent);
+
         if (updateEvent.getStateAction() != null) {
             if (updateEvent.getStateAction().equals("PUBLISH_EVENT")) {
                 if (oldEvent.getState().equals(State.PUBLISHED)) {
@@ -216,14 +235,15 @@ public class EventServiceImpl implements EventService {
                 } else if (oldEvent.getState().equals(State.REJECTED)) {
                     throw new ConflictException(EVENT_CANCELED_MSG);
                 } else {
-                    oldEvent.setState(State.PUBLISHED);
+                    newEvent.setState(State.PUBLISHED);
+                    newEvent.setPublishedOn(Instant.now());
                 }
 
             } else if (updateEvent.getStateAction().equals("REJECT_EVENT")) {
                 if (oldEvent.getState().equals(State.PUBLISHED)) {
                     throw new ConflictException(EVENT_ALREADY_PUBLISHED_MSG);
                 } else {
-                    oldEvent.setState(State.REJECTED);
+                    newEvent.setState(State.REJECTED);
                 }
             }
         }
@@ -232,6 +252,10 @@ public class EventServiceImpl implements EventService {
         locationRepository.save(newEvent.getLocation());
 
         EventFullDto updatedEvent = EventMapper.modelToEventFullDto(newEvent);
+
+        if (newEvent.getPublishedOn() != null) {
+            updatedEvent.setPublishedOn(DateMapper.stringFromInstant(newEvent.getPublishedOn()));
+        }
 
         if (updateEvent.getCategory() != null) {
             Category newCategory = categoryRepository.findById(updateEvent.getCategory())

@@ -92,24 +92,6 @@ public class RequestServiceImpl implements RequestService {
         }
     }
 
-    public void validateRequest(Event event, User user) {
-        if (event.getInitiator().getId().equals(user.getId())) {
-            throw new ConflictException(REQUEST_ON_USERS_EVENT_NOT_ALLOWED_MSG);
-        }
-
-        if (event.getState().equals(State.PENDING)) {
-            throw new ConflictException(REQUEST_ON_UNPUBLISHED_EVENT_NOT_ALLOWED_MSG);
-        }
-
-        if (event.getParticipantLimit() != 0) {
-            List<Request> requests = requestRepository.findByEventId(event.getId());
-
-            if (event.getParticipantLimit().equals(requests.size())) {
-                throw new ConflictException(LIMIT_OF_PARTICIPANTS_EXCEEDED_MSG);
-            }
-        }
-    }
-
     @Override
     @Transactional
     public EventRequestStatusUpdateResult updateUsersEventsRequests(
@@ -122,12 +104,20 @@ public class RequestServiceImpl implements RequestService {
         List<Request> requests = requestRepository.findAllById(updateUsersEventsRequest.getRequestIds());
 
         for (Request request : requests) {
-            if (updateUsersEventsRequest.getStatus().equals(State.REJECTED)
-                    && request.getStatus().equals(State.CONFIRMED)) {
-                throw new ConflictException(REQUEST_ALREADY_CONFIRMED_MSG);
-            } else {
-                request.setStatus(updateUsersEventsRequest.getStatus());
-                requestRepository.save(request);
+            if (event.getParticipantLimit() != 0) {
+                List<Request> confirmedRequests = requestRepository.findByEventIdAndStatusLike(event.getId(), State.CONFIRMED);
+
+                if (event.getParticipantLimit().equals(confirmedRequests.size())) {
+                    throw new ConflictException(LIMIT_OF_PARTICIPANTS_EXCEEDED_MSG);
+                } else {
+                    if (updateUsersEventsRequest.getStatus().equals(State.REJECTED)
+                            && request.getStatus().equals(State.CONFIRMED)) {
+                        throw new ConflictException(REQUEST_ALREADY_CONFIRMED_MSG);
+                    } else {
+                        request.setStatus(updateUsersEventsRequest.getStatus());
+                        requestRepository.save(request);
+                    }
+                }
             }
         }
 
@@ -156,5 +146,23 @@ public class RequestServiceImpl implements RequestService {
         request.setStatus(State.CANCELED);
 
         return RequestMapper.modelToParticipationRequestDto(request);
+    }
+
+    public void validateRequest(Event event, User user) {
+        if (event.getInitiator().getId().equals(user.getId())) {
+            throw new ConflictException(REQUEST_ON_USERS_EVENT_NOT_ALLOWED_MSG);
+        }
+
+        if (event.getState().equals(State.PENDING)) {
+            throw new ConflictException(REQUEST_ON_UNPUBLISHED_EVENT_NOT_ALLOWED_MSG);
+        }
+
+        if (event.getParticipantLimit() != 0) {
+            List<Request> requests = requestRepository.findByEventId(event.getId());
+
+            if (event.getParticipantLimit().equals(requests.size())) {
+                throw new ConflictException(LIMIT_OF_PARTICIPANTS_EXCEEDED_MSG);
+            }
+        }
     }
 }
