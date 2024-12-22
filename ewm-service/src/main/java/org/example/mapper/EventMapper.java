@@ -1,13 +1,10 @@
 package org.example.mapper;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.experimental.UtilityClass;
-import org.example.dto.StatsHitDto;
 import org.example.dto.event.*;
 import org.example.model.Event;
 import org.example.model.State;
 
-import java.time.Instant;
 import java.util.Optional;
 
 @UtilityClass
