@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.StatsClient;
+import org.example.dto.StatsHitDto;
+import org.example.dto.StatsViewDto;
 import org.example.dto.event.*;
 import org.example.exception.ConflictException;
 import org.example.exception.NotFoundException;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.*;
 
 @Slf4j
@@ -64,7 +67,7 @@ public class EventServiceImpl implements EventService {
         event.setCategory(category);
         event.setLocation(locationRepository.save(newEvent.getLocation()));
         event.setConfirmedRequests(0);
-        event.setCreatedOn(Instant.now());
+        event.setCreatedOn(Instant.now().atZone(ZoneId.of("UTC+3")).toInstant());
         event.setInitiator(user);
         event.setState(State.PENDING);
         event.setViews(0);
@@ -93,7 +96,8 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventFullDto> getEventsByParam(List<Integer> userIds, List<String> states,
+    public List<EventFullDto> getEventsByParam(HttpServletRequest request,
+                                               List<Integer> userIds, List<String> states,
                                                List<Integer> catIds, String rangeStart,
                                                String rangeEnd, Integer from, Integer size) {
         List<Event> events = new ArrayList<>();
@@ -128,6 +132,31 @@ public class EventServiceImpl implements EventService {
             events.add(e);
         }
 
+        if (!events.isEmpty()) {
+            for (Event e : events) {
+                String uri = "/events/" + e.getId();
+
+                String statStart = Objects.requireNonNullElseGet(rangeStart, () -> DateMapper.stringFromInstant(e.getCreatedOn()));
+                String statEnd = Objects.requireNonNullElseGet(rangeEnd, () -> DateMapper.stringFromInstant(Instant.now()));
+
+                List<String> urisForStat = new ArrayList<>();
+                urisForStat.add(uri);
+                List<StatsViewDto> statsViewDtos = statsClient.getHits(statStart, statEnd, urisForStat, true);
+
+                if (!statsViewDtos.isEmpty()) {
+                    e.setViews(statsViewDtos.getFirst().getHits());
+                }
+
+                String timeForStatCreate = DateMapper.stringFromInstant(Instant.now());
+                statsClient.create(StatsHitDto.builder()
+                        .app("ewm-main-service")
+                        .uri(request.getRequestURI())
+                        .ip(request.getRemoteAddr())
+                        .timestamp(timeForStatCreate)
+                        .build());
+            }
+        }
+
         return events.stream().map(EventMapper::modelToEventFullDto).limit(size).toList();
     }
 
@@ -143,13 +172,20 @@ public class EventServiceImpl implements EventService {
         }
 
         Event foundEvent = event.get();
-        statsClient.create(EventMapper.modelToStatsHitDto(request));
-        String timeForStat = DateMapper.stringFromInstant(foundEvent.getPublishedOn());
+
+        String timeForStatCreate = DateMapper.stringFromInstant(Instant.now());
+        statsClient.create(StatsHitDto.builder()
+                .app("ewm-main-service")
+                .uri(request.getRequestURI())
+                .ip(request.getRemoteAddr())
+                .timestamp(timeForStatCreate)
+                .build());
+
         List<String> urisForStat = new ArrayList<>();
         urisForStat.add(request.getRequestURI());
 
         foundEvent.setViews(statsClient
-                .getHits(timeForStat, timeForStat, urisForStat, true)
+                .getHits(timeForStatCreate, timeForStatCreate, urisForStat, true)
                 .getFirst()
                 .getHits());
 
@@ -158,7 +194,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDto> getEventsByParamPublic(
-            String text, List<Integer> categories,
+            HttpServletRequest request, String text, List<Integer> categories,
             Boolean paid, String rangeStart, String rangeEnd,
             Boolean onlyAvailable, String sort, Integer from, Integer size) {
 
@@ -216,6 +252,30 @@ public class EventServiceImpl implements EventService {
                         .limit(size)
                         .sorted(Comparator.comparingInt(Event::getViews))
                         .toList();
+            }
+        }
+
+        String timeForStatCreate = DateMapper.stringFromInstant(
+                Instant.now().atZone(ZoneId.of("UTC+3")).toInstant());
+
+        if (!events.isEmpty()) {
+            for (Event e : events) {
+                String uri = request.getRequestURI() + "/" + e.getId();
+                List<String> urisForStat = new ArrayList<>();
+
+                statsClient.create(StatsHitDto.builder()
+                        .app("ewm-main-service")
+                        .uri(uri)
+                        .ip(request.getRemoteAddr())
+                        .timestamp(timeForStatCreate)
+                        .build());
+
+                urisForStat.add(uri);
+
+                e.setViews(statsClient
+                        .getHits(timeForStatCreate, timeForStatCreate, urisForStat, true)
+                        .getFirst()
+                        .getHits());
             }
         }
 

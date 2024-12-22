@@ -38,18 +38,18 @@ public class PublicController {
 
     @GetMapping("/events")
     @ResponseStatus(HttpStatus.OK)
-    public List<EventShortDto> getEventsByParamPublic(
-            @RequestParam(required = false) String text,
-            @RequestParam(required = false) List<Integer> categories,
-            @RequestParam(required = false) Boolean paid,
-            @RequestParam(required = false) String rangeStart,
-            @RequestParam(required = false) String rangeEnd,
-            @RequestParam(required = false, defaultValue = "false") Boolean onlyAvailable,
-            @RequestParam(required = false) String sort,
-            @RequestParam(required = false, defaultValue = "0") Integer from,
-            @RequestParam(required = false, defaultValue = "10") Integer size) {
+    public List<EventShortDto> getEventsByParamPublic(HttpServletRequest request,
+                                                      @RequestParam(required = false) String text,
+                                                      @RequestParam(required = false) List<Integer> categories,
+                                                      @RequestParam(required = false) Boolean paid,
+                                                      @RequestParam(required = false) String rangeStart,
+                                                      @RequestParam(required = false) String rangeEnd,
+                                                      @RequestParam(required = false, defaultValue = "false") Boolean onlyAvailable,
+                                                      @RequestParam(required = false) String sort,
+                                                      @RequestParam(required = false, defaultValue = "0") Integer from,
+                                                      @RequestParam(required = false, defaultValue = "10") Integer size) {
         return eventService.getEventsByParamPublic(
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+                request, text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
     }
 
     @GetMapping("/events/{id}")

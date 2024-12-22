@@ -112,13 +112,4 @@ public class EventMapper {
         }
         return oldEvent;
     }
-
-    public static StatsHitDto modelToStatsHitDto(HttpServletRequest request) {
-        return StatsHitDto.builder()
-                .app("ewm-main-service")
-                .uri(request.getRequestURI())
-                .ip(request.getRemoteAddr())
-                .timestamp(DateMapper.stringFromInstant(Instant.now()))
-                .build();
-    }
 }

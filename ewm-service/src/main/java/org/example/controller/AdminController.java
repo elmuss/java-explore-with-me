@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.category.CategoryDto;
@@ -72,14 +73,15 @@ public class AdminController {
 
     @GetMapping("/events")
     @ResponseStatus(HttpStatus.OK)
-    public List<EventFullDto> getEventsByParam(@RequestParam(required = false) List<Integer> users,
+    public List<EventFullDto> getEventsByParam(HttpServletRequest request,
+                                               @RequestParam(required = false) List<Integer> users,
                                                @RequestParam(required = false) List<String> states,
                                                @RequestParam(required = false) List<Integer> categories,
                                                @RequestParam(required = false) String rangeStart,
                                                @RequestParam(required = false) String rangeEnd,
                                                @RequestParam(required = false, defaultValue = "0") Integer from,
                                                @RequestParam(required = false, defaultValue = "10") Integer size) {
-        return eventService.getEventsByParam(users, states, categories, rangeStart, rangeEnd, from, size);
+        return eventService.getEventsByParam(request, users, states, categories, rangeStart, rangeEnd, from, size);
     }
 
     @PatchMapping("/events/{eventId}")

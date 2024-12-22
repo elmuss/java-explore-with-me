@@ -8,7 +8,8 @@ import java.util.List;
 public interface EventService {
     EventFullDto createEvent(int userId, NewEventDto newEvent);
 
-    List<EventFullDto> getEventsByParam(List<Integer> userIds,
+    List<EventFullDto> getEventsByParam(HttpServletRequest request,
+                                        List<Integer> userIds,
                                         List<String> states,
                                         List<Integer> categoryIds,
                                         String rangeStart,
@@ -18,7 +19,8 @@ public interface EventService {
 
     EventFullDto getEventById(Integer id, HttpServletRequest request);
 
-    List<EventShortDto> getEventsByParamPublic(String text, List<Integer> categories, Boolean paid,
+    List<EventShortDto> getEventsByParamPublic(HttpServletRequest request,
+                                               String text, List<Integer> categories, Boolean paid,
                                                String rangeStart, String rangeEnd, Boolean onlyAvailable,
                                                String sort, Integer from, Integer size);
 
