@@ -12,6 +12,7 @@ import org.example.exception.ValidationException;
 import org.example.mapper.CategoryMapper;
 import org.example.mapper.DateMapper;
 import org.example.mapper.EventMapper;
+import org.example.mapper.StateMapper;
 import org.example.model.*;
 import org.example.repository.*;
 import org.example.service.dao.EventService;
@@ -106,10 +107,10 @@ public class EventServiceImpl implements EventService {
             params.and(QEvent.event.initiator.id.in(userIds));
         }
 
-        /*if (Objects.nonNull(states)) {
+        if (Objects.nonNull(states)) {
             List<State> s = states.stream().map(StateMapper::stateConvert).toList();
             params.and(QEvent.event.state.in(s));
-        }*/
+        }
 
         if (Objects.nonNull(rangeStart)) {
             Instant start = DateMapper.instantFromString(rangeStart);
@@ -132,6 +133,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventFullDto getEventById(Integer id, HttpServletRequest request) {
+        statsClient.create(EventMapper.modelToStatsHitDto(request));
         Optional<Event> event = eventRepository.findById(id);
 
         if (event.isEmpty() || event.get().getState() != State.PUBLISHED) {
@@ -139,8 +141,7 @@ public class EventServiceImpl implements EventService {
         }
 
         Event foundEvent = event.get();
-        statsClient.create(EventMapper.modelToStatsHitDto(request));
-        //foundEvent.setViews(foundEvent.getViews() + 1);
+
         String timeForStat = DateMapper.stringFromInstant(foundEvent.getPublishedOn());
         List<String> urisForStat = new ArrayList<>();
         urisForStat.add(request.getRequestURI());
@@ -171,7 +172,8 @@ public class EventServiceImpl implements EventService {
         }
 
         if (Objects.nonNull(text)) {
-            params.and(QEvent.event.annotation.containsIgnoreCase(text));
+            params.and(QEvent.event.annotation.containsIgnoreCase(text)
+                    .or(QEvent.event.description.containsIgnoreCase(text)));
         }
 
         if (Objects.nonNull(paid)) {

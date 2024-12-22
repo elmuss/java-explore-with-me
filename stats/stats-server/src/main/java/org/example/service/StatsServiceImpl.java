@@ -37,7 +37,7 @@ public class StatsServiceImpl implements StatsService {
         List<StatsViewDto> hits = new ArrayList<>();
         List<Stats> stats = new ArrayList<>();
 
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd%20HH:mm:ss");
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         LocalDateTime ldtStart = LocalDateTime.parse(start, dtf);
         ZonedDateTime zdtStart = ZonedDateTime.of(ldtStart, ZoneId.of("UTC+0"));

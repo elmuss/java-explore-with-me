@@ -59,7 +59,7 @@ public class RequestServiceImpl implements RequestService {
         request.setEvent(event);
         request.setRequester(user);
 
-        if (event.getParticipantLimit() == 0) {
+        if (event.getParticipantLimit() == 0 || !event.getRequestModeration()) {
             request.setStatus(State.CONFIRMED);
         } else {
             request.setStatus(State.PENDING);
@@ -105,7 +105,8 @@ public class RequestServiceImpl implements RequestService {
 
         for (Request request : requests) {
             if (event.getParticipantLimit() != 0) {
-                List<Request> confirmedRequests = requestRepository.findByEventIdAndStatusLike(event.getId(), State.CONFIRMED);
+                List<Request> confirmedRequests =
+                        requestRepository.findByEventIdAndStatusLike(event.getId(), State.CONFIRMED);
 
                 if (event.getParticipantLimit().equals(confirmedRequests.size())) {
                     throw new ConflictException(LIMIT_OF_PARTICIPANTS_EXCEEDED_MSG);
@@ -158,7 +159,7 @@ public class RequestServiceImpl implements RequestService {
         }
 
         if (event.getParticipantLimit() != 0) {
-            List<Request> requests = requestRepository.findByEventId(event.getId());
+            List<Request> requests = requestRepository.findByEventIdAndStatusLike(event.getId(), State.CONFIRMED);
 
             if (event.getParticipantLimit().equals(requests.size())) {
                 throw new ConflictException(LIMIT_OF_PARTICIPANTS_EXCEEDED_MSG);

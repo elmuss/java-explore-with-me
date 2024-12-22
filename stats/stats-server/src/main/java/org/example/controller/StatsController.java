@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -31,7 +33,10 @@ public class StatsController {
                                       @RequestParam(required = false) List<String> uris,
                                       @RequestParam(defaultValue = "false") Boolean unique) {
 
-        return statsService.getHits(start, end, uris, unique);
+        String startDecoded = URLDecoder.decode(start, StandardCharsets.UTF_8);
+        String endDecoded = URLDecoder.decode(end, StandardCharsets.UTF_8);
+
+        return statsService.getHits(startDecoded, endDecoded, uris, unique);
     }
 
 }
