@@ -133,15 +133,17 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventFullDto getEventById(Integer id, HttpServletRequest request) {
-        statsClient.create(EventMapper.modelToStatsHitDto(request));
         Optional<Event> event = eventRepository.findById(id);
 
-        if (event.isEmpty() || event.get().getState() != State.PUBLISHED) {
+        if (event.isEmpty()) {
+            throw new NotFoundException(String.format(EVENT_NOT_FOUND_MSG, id));
+        }
+        if (event.get().getState() != State.PUBLISHED) {
             throw new NotFoundException(String.format(EVENT_NOT_FOUND_MSG, id));
         }
 
         Event foundEvent = event.get();
-
+        statsClient.create(EventMapper.modelToStatsHitDto(request));
         String timeForStat = DateMapper.stringFromInstant(foundEvent.getPublishedOn());
         List<String> urisForStat = new ArrayList<>();
         urisForStat.add(request.getRequestURI());
