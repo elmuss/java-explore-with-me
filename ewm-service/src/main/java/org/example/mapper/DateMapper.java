@@ -14,13 +14,13 @@ public class DateMapper {
 
     public static Instant instantFromString(String stringTime) {
         LocalDateTime ldt = LocalDateTime.parse(stringTime, dtf);
-        ZonedDateTime zdt = ZonedDateTime.of(ldt, ZoneId.of("UTC+3"));
+        ZonedDateTime zdt = ZonedDateTime.of(ldt, ZoneId.of("UTC+0"));
 
         return Instant.from(zdt);
     }
 
     public static String stringFromInstant(Instant instantTime) {
-        ZonedDateTime zdt = instantTime.atZone(ZoneId.of("UTC+3"));
+        ZonedDateTime zdt = instantTime.atZone(ZoneId.of("UTC+0"));
 
         return zdt.format(dtf);
     }

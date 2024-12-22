@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.*;
 
 @Slf4j
@@ -67,7 +66,7 @@ public class EventServiceImpl implements EventService {
         event.setCategory(category);
         event.setLocation(locationRepository.save(newEvent.getLocation()));
         event.setConfirmedRequests(0);
-        event.setCreatedOn(Instant.now().atZone(ZoneId.of("UTC+3")).toInstant());
+        event.setCreatedOn(Instant.now().plusSeconds(10800));
         event.setInitiator(user);
         event.setState(State.PENDING);
         event.setViews(0);
@@ -136,8 +135,11 @@ public class EventServiceImpl implements EventService {
             for (Event e : events) {
                 String uri = "/events/" + e.getId();
 
-                String statStart = Objects.requireNonNullElseGet(rangeStart, () -> DateMapper.stringFromInstant(e.getCreatedOn()));
-                String statEnd = Objects.requireNonNullElseGet(rangeEnd, () -> DateMapper.stringFromInstant(Instant.now()));
+                String statStart = Objects.requireNonNullElseGet(
+                        rangeStart, () -> DateMapper.stringFromInstant(e.getCreatedOn()));
+                String statEnd = Objects.requireNonNullElseGet(
+                        rangeEnd, () -> DateMapper.stringFromInstant(
+                                Instant.now().plusSeconds(10800)));
 
                 List<String> urisForStat = new ArrayList<>();
                 urisForStat.add(uri);
@@ -146,14 +148,6 @@ public class EventServiceImpl implements EventService {
                 if (!statsViewDtos.isEmpty()) {
                     e.setViews(statsViewDtos.getFirst().getHits());
                 }
-
-                String timeForStatCreate = DateMapper.stringFromInstant(Instant.now());
-                statsClient.create(StatsHitDto.builder()
-                        .app("ewm-main-service")
-                        .uri(request.getRequestURI())
-                        .ip(request.getRemoteAddr())
-                        .timestamp(timeForStatCreate)
-                        .build());
             }
         }
 
@@ -173,7 +167,8 @@ public class EventServiceImpl implements EventService {
 
         Event foundEvent = event.get();
 
-        String timeForStatCreate = DateMapper.stringFromInstant(Instant.now());
+        String timeForStatCreate = DateMapper.stringFromInstant(
+                Instant.now().plusSeconds(10800));
         statsClient.create(StatsHitDto.builder()
                 .app("ewm-main-service")
                 .uri(request.getRequestURI())
@@ -256,7 +251,7 @@ public class EventServiceImpl implements EventService {
         }
 
         String timeForStatCreate = DateMapper.stringFromInstant(
-                Instant.now().atZone(ZoneId.of("UTC+3")).toInstant());
+                Instant.now().plusSeconds(10800));
 
         if (!events.isEmpty()) {
             for (Event e : events) {
