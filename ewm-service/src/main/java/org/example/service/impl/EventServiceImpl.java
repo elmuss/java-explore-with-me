@@ -205,7 +205,8 @@ public class EventServiceImpl implements EventService {
         }
 
         if (Objects.nonNull(text)) {
-            params.and(QEvent.event.annotation.containsIgnoreCase(text));
+            params.and(QEvent.event.annotation.containsIgnoreCase(text)
+                    .or(QEvent.event.description.containsIgnoreCase(text)));
         }
 
         if (Objects.nonNull(paid)) {
@@ -252,18 +253,17 @@ public class EventServiceImpl implements EventService {
         String timeForStatCreate = DateMapper.stringFromInstant(
                 Instant.now().plusSeconds(10800));
 
+        String uri = request.getRequestURI();
+        statsClient.create(StatsHitDto.builder()
+                .app("ewm-main-service")
+                .uri(uri)
+                .ip(request.getRemoteAddr())
+                .timestamp(timeForStatCreate)
+                .build());
+
         if (!events.isEmpty()) {
             for (Event e : events) {
-                String uri = request.getRequestURI() + "/" + e.getId();
                 List<String> urisForStat = new ArrayList<>();
-
-                statsClient.create(StatsHitDto.builder()
-                        .app("ewm-main-service")
-                        .uri(uri)
-                        .ip(request.getRemoteAddr())
-                        .timestamp(timeForStatCreate)
-                        .build());
-
                 urisForStat.add(uri);
 
                 e.setViews(statsClient

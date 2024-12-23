@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.dto.StatsHitDto;
 import org.example.dto.StatsViewDto;
+import org.example.exception.ValidationException;
 import org.example.mapper.StatsHitMapper;
 import org.example.model.Stats;
 import org.example.repository.StatsRepository;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class StatsServiceImpl implements StatsService {
     private final StatsRepository sr;
+    private static final String END_TIME_WRONG_MSG = "End time is not correct";
 
     @Override
     @Transactional
@@ -46,6 +48,10 @@ public class StatsServiceImpl implements StatsService {
         LocalDateTime ldtEnd = LocalDateTime.parse(end, dtf);
         ZonedDateTime zdtEnd = ZonedDateTime.of(ldtEnd, ZoneId.of("UTC+0"));
         Instant instantEnd = Instant.from(zdtEnd);
+
+        if (instantEnd.isBefore(instantStart)) {
+            throw new ValidationException(END_TIME_WRONG_MSG);
+        }
 
         if (uris == null && !unique) {
             stats.addAll(sr.findAllByTimestamp(instantStart, instantEnd));
