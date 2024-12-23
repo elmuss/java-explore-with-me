@@ -205,8 +205,7 @@ public class EventServiceImpl implements EventService {
         }
 
         if (Objects.nonNull(text)) {
-            params.and(QEvent.event.annotation.containsIgnoreCase(text)
-                    .or(QEvent.event.description.containsIgnoreCase(text)));
+            params.and(QEvent.event.annotation.containsIgnoreCase(text));
         }
 
         if (Objects.nonNull(paid)) {
