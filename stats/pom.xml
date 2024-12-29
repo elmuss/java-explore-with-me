@@ -10,7 +10,7 @@
 
     </parent>
 
-    <groupId>org.example</groupId>
+    <groupId>ru.practicum</groupId>
     <artifactId>stats</artifactId>
     <packaging>pom</packaging>
     <modules>
