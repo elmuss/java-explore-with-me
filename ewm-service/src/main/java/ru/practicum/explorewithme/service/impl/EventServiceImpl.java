@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.explorewithme.StatsClient;
 import ru.practicum.explorewithme.dto.StatsHitDto;
 import ru.practicum.explorewithme.dto.StatsViewDto;
+import ru.practicum.explorewithme.dto.comment.CommentDto;
 import ru.practicum.explorewithme.dto.event.*;
 import ru.practicum.explorewithme.exception.ConflictException;
 import ru.practicum.explorewithme.exception.NotFoundException;
@@ -21,7 +22,10 @@ import ru.practicum.explorewithme.repository.*;
 import ru.practicum.explorewithme.service.dao.EventService;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -35,6 +39,7 @@ public class EventServiceImpl implements EventService {
     private final UserRepository userRepository;
     private final LocationRepository locationRepository;
     private final RequestRepository requestRepository;
+    private final CommentRepository commentRepository;
 
     private static final Integer SEC_IN_THREE_HOURS = 10800;
     private static final Integer SEC_IN_ONE_HOUR = 3600;
@@ -98,7 +103,10 @@ public class EventServiceImpl implements EventService {
 
         eventRepository.save(event);
 
-        return EventMapper.modelToEventFullDto(event);
+        EventFullDto createdEvent = EventMapper.modelToEventFullDto(event);
+        createdEvent.setComments(List.of());
+
+        return createdEvent;
     }
 
     @Override
@@ -158,7 +166,28 @@ public class EventServiceImpl implements EventService {
             }
         }
 
-        return events.stream().map(EventMapper::modelToEventFullDto).toList();
+        List<EventFullDto> foundEventsDto = events.stream().map(EventMapper::modelToEventFullDto).toList();
+
+        if (!foundEventsDto.isEmpty()) {
+            List<Integer> eventIds = new ArrayList<>();
+            for (EventFullDto eventFullDto : foundEventsDto) {
+                eventIds.add(eventFullDto.getId());
+            }
+
+            List<Comment> comments = commentRepository.findByEventIds(eventIds);
+            if (!comments.isEmpty()) {
+                for (Comment c : comments) {
+                    for (Integer eventId : eventIds) {
+                        if (c.getEventId().equals(eventId)) {
+                            foundEventsDto.get(eventId).getComments()
+                                    .add(CommentMapper.modelToCommentDto(comments.get(c.getId())));
+                        }
+                    }
+                }
+            }
+        }
+
+        return foundEventsDto;
     }
 
     @Override
@@ -191,7 +220,13 @@ public class EventServiceImpl implements EventService {
                 .getFirst()
                 .getHits());
 
-        return EventMapper.modelToEventFullDto(foundEvent);
+        EventFullDto foundEventDto = EventMapper.modelToEventFullDto(foundEvent);
+
+        List<CommentDto> comments = commentRepository.findByEventId(id).stream()
+                .map(CommentMapper::modelToCommentDto).toList();
+        foundEventDto.setComments(comments);
+
+        return foundEventDto;
     }
 
     @Override
@@ -346,6 +381,11 @@ public class EventServiceImpl implements EventService {
                             String.format(CATEGORY_NOT_FOUND_MSG, updateEvent.getCategory())));
             updatedEvent.setCategory(CategoryMapper.modelToCategoryDto(newCategory));
         }
+
+        List<CommentDto> comments = commentRepository.findByEventId(eventId).stream()
+                .map(CommentMapper::modelToCommentDto).toList();
+        updatedEvent.setComments(comments);
+
         return updatedEvent;
     }
 
@@ -366,7 +406,13 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException(String.format(EVENT_NOT_FOUND_MSG, eventId)));
 
-        return EventMapper.modelToEventFullDto(eventRepository.findByIdAndInitiatorId(eventId, userId));
+        EventFullDto foundEvent = EventMapper.modelToEventFullDto(eventRepository.findByIdAndInitiatorId(eventId, userId));
+
+        List<CommentDto> comments = commentRepository.findByEventId(eventId).stream()
+                .map(CommentMapper::modelToCommentDto).toList();
+        foundEvent.setComments(comments);
+
+        return foundEvent;
     }
 
     @Override
@@ -408,7 +454,13 @@ public class EventServiceImpl implements EventService {
 
         eventRepository.save(newEvent);
 
-        return EventMapper.modelToEventFullDto(newEvent);
+        EventFullDto newEventDto = EventMapper.modelToEventFullDto(newEvent);
+
+        List<CommentDto> comments = commentRepository.findByEventId(eventId).stream()
+                .map(CommentMapper::modelToCommentDto).toList();
+        newEventDto.setComments(comments);
+
+        return newEventDto;
     }
 
     public void validateEvent(NewEventDto newEvent) {

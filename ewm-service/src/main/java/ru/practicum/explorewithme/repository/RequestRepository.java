@@ -18,4 +18,6 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, Quer
     Request findByIdAndRequesterId(Integer id, Integer requesterId);
 
     List<Request> findByEventIdAndStatusLike(Integer eventId, State state);
+
+    Optional<Request> getByRequesterIdAndEventIdAndStatusLike(Integer userId, Integer eventId, State state);
 }
