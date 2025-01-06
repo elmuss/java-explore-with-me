@@ -18,14 +18,13 @@ import ru.practicum.explorewithme.exception.NotFoundException;
 import ru.practicum.explorewithme.exception.ValidationException;
 import ru.practicum.explorewithme.mapper.*;
 import ru.practicum.explorewithme.model.*;
+import ru.practicum.explorewithme.model.QEvent;
 import ru.practicum.explorewithme.repository.*;
 import ru.practicum.explorewithme.service.dao.EventService;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -169,20 +168,21 @@ public class EventServiceImpl implements EventService {
         List<EventFullDto> foundEventsDto = events.stream().map(EventMapper::modelToEventFullDto).toList();
 
         if (!foundEventsDto.isEmpty()) {
-            List<Integer> eventIds = new ArrayList<>();
-            for (EventFullDto eventFullDto : foundEventsDto) {
-                eventIds.add(eventFullDto.getId());
-            }
+            List<Integer> eventIds = foundEventsDto.stream()
+                    .map(EventFullDto::getId)
+                    .toList();
 
-            List<Comment> comments = commentRepository.findByEventIds(eventIds);
+            List<Comment> comments = commentRepository.findByEventIdIn(eventIds);
+
+            Map<Integer, List<Comment>> commentsToEvent = comments.stream()
+                    .collect(Collectors.groupingBy(Comment::getEventId));
+
             if (!comments.isEmpty()) {
-                for (Comment c : comments) {
-                    for (Integer eventId : eventIds) {
-                        if (c.getEventId().equals(eventId)) {
-                            foundEventsDto.get(eventId).getComments()
-                                    .add(CommentMapper.modelToCommentDto(comments.get(c.getId())));
-                        }
-                    }
+                for (EventFullDto e : foundEventsDto) {
+                    e.setComments(
+                            commentsToEvent.get(e.getId()).stream()
+                                    .map(CommentMapper::modelToCommentDto)
+                                    .toList());
                 }
             }
         }

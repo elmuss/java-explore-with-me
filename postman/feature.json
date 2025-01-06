@@ -107,7 +107,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"annotation\" : \"annotation of the new event\",\r\n    \"category\" : {{catid}},\r\n    \"description\" : \"description of the new event\",\r\n    \"eventDate\" : \"2025-01-04 21:38:52\",\r\n    \"location\": {\r\n        \"lat\": 49.8919,\r\n        \"lon\": 163.9023\r\n    },\r\n    \"paid\" : false,\r\n    \"participantLimit\" : 0,\r\n    \"requestModeration\" : false,\r\n    \"title\" : \"title\"\r\n}",
+					"raw": "{\r\n    \"annotation\" : \"annotation of the new event\",\r\n    \"category\" : {{catid}},\r\n    \"description\" : \"description of the new event\",\r\n    \"eventDate\" : \"2026-01-04 21:38:52\",\r\n    \"location\": {\r\n        \"lat\": 49.8919,\r\n        \"lon\": 163.9023\r\n    },\r\n    \"paid\" : false,\r\n    \"participantLimit\" : 0,\r\n    \"requestModeration\" : false,\r\n    \"title\" : \"title\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"

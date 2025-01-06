@@ -38,7 +38,6 @@ public class CommentServiceImpl implements CommentService {
             "Only event's owner or participant allowed to leave comment";
     private static final String ONLY_COMMENT_OWNER_MSG =
             "Only comment's owner allowed to delete comment";
-    private static final Integer SEC_IN_THREE_HOURS = 10800;
 
     @Override
     @Transactional
@@ -49,7 +48,7 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new NotFoundException(String.format(USER_NOT_FOUND_MSG, userId)));
 
         Optional<Request> confirmedUsersRequestOnEvent =
-                requestRepository.getByRequesterIdAndEventIdAndStatusLike(userId, eventId, State.CONFIRMED);
+                requestRepository.getByRequesterIdAndEventIdAndStatus(userId, eventId, State.CONFIRMED);
 
         if (confirmedUsersRequestOnEvent.isEmpty() && !event.getInitiator().getId().equals(userId)) {
             throw new ValidationException(ONLY_OWNER_OR_PARTICIPANT_MSG);
@@ -58,7 +57,7 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = CommentMapper.modelFromNewCommentDto(newComment);
         comment.setAuthor(user);
         comment.setEventId(eventId);
-        comment.setCreated(Instant.now().plusSeconds(SEC_IN_THREE_HOURS));
+        comment.setCreated(Instant.now());
 
         return CommentMapper.modelToCommentDto(commentRepository.save(comment));
     }
